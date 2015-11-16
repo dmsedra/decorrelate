@@ -11,11 +11,12 @@ class Linear(object):
         return np.dot(self.W,X) + self.b
 
     # passback - (n_out,n)
-    def getGradient(self,X,passback):
+    def getGradient(self,X,lam,passback):
+        m = X.shape[1]
         gradW = np.dot(passback, np.transpose(X))
         gradb = np.sum(passback,1)
         gradb = gradb[:,np.newaxis] #keep from broadcasting
-        return (gradW, gradb)
+        return (gradW/m + lam*self.W, gradb/m)
 
     def getPassback(self,X,passback):
         return np.dot(self.W.T, passback)
@@ -37,6 +38,9 @@ class SquaredLoss(object):
         pass
 
     def getOutput(self,X,Y):
+        comp = np.zeros(X.shape)
+        for i in range(X.shape[1]):
+            comp[Y[i],i] = 1.0
         return 0.5*np.linalg.norm(X-Y)**2
 
     def getGradient(self,X,Y):
@@ -76,31 +80,49 @@ class SoftNLL(object):
 
 
     #compute SoftMax + NLL
-    def getOutput(self,X,Y):
-        def colSoft(col):
-            e = np.exp(col)
-            return e/np.sum(e)
-
-        sm = np.apply_along_axis(colSoft, 0, X)
+    def getOutput(self,X,Y,Weights,lam):
+        sm = np.exp(X - np.amax(X,axis=0))
+        sm = sm/np.sum(sm,0)
         res = []
         for i,v in enumerate(Y):
             res.append(sm[v,i])
 
-        return np.mean(-1*np.log(res))
+        L2 = np.sum(map(lambda z: np.linalg.norm(z,2)**2, Weights))
+        return np.sum(-1*np.log(res)) + lam*L2/2.0
 
+    def computeAccuracy(self,X,Y):
+        sm = np.apply_along_axis(np.argmax, 0, X)
+        accuracy = 0.0
+        m = X.shape[1]
+
+        for i,v  in enumerate(sm):
+            if sm[i] == Y[i]:
+                accuracy = accuracy + 1
+
+        return accuracy/m
 
     def getGradient(self,X,Y):
-        def colSoft(col):
-            e = np.exp(col)
-            return e/np.sum(e)
+        sm = np.exp(X - np.amax(X,axis=0))
+        sm = sm/np.sum(sm,0)
 
-        sm = np.apply_along_axis(colSoft, 0, X)
         for i,v in enumerate(Y):
             sm[v,i] = sm[v,i]-1
 
         return sm
 
+    def gradCheck(self,X,Y,Weights,lam):
+        verify = self.getGradient(X,Y)
+        eps = 1e-5
+        (n,m) = X.shape
+        check = np.zeros(X.shape)
+        for i in range(n):
+            for j in range(m):
+                X1 = np.copy(X)
+                X1[i,j] = X[i,j] + eps
+                X2 = np.copy(X)
+                X2[i,j] = X[i,j] - eps
+                check[i,j] = (self.getOutput(X1,Y,Weights,lam)-self.getOutput(X2,Y,Weights,lam))/(2*eps)
 
-
+        return np.linalg.norm(verify-check)
 
 
