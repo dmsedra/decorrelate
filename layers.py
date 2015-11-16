@@ -4,7 +4,7 @@ import numpy.random as rand
 
 class Linear(object):
     def __init__(self,n_out, n_in):
-        self.W = rand.normal(0.0,2.0/(n_in+n_out),(n_out,n_in)) #use Xavier initialization
+        self.W = rand.normal(0.0,0.2,(n_out,n_in)) #use Xavier initialization
         self.b = 0.01*np.ones((n_out,1))
 
     def getOutput(self,X):
@@ -78,9 +78,19 @@ class SoftNLL(object):
     def __init__(self):
         pass
 
+    def getOutput(self,X):
+        sm = np.exp(X - np.amax(X,axis=0))
+        sm = sm/np.sum(sm,0)
+        return sm
+
+    def getGradient(self,X,Y):
+        Y_pred = self.getOutput(X)
+        for i in range(len(Y)):
+            Y_pred[Y[i],i] -= 1
+        return Y_pred
 
     #compute SoftMax + NLL
-    def getOutput(self,X,Y,Weights,lam):
+    def getLoss(self,X,Y,Weights,lam):
         sm = np.exp(X - np.amax(X,axis=0))
         sm = sm/np.sum(sm,0)
         res = []
@@ -101,14 +111,14 @@ class SoftNLL(object):
 
         return accuracy/m
 
-    def getGradient(self,X,Y):
-        sm = np.exp(X - np.amax(X,axis=0))
-        sm = sm/np.sum(sm,0)
-
-        for i,v in enumerate(Y):
-            sm[v,i] = sm[v,i]-1
-
-        return sm
+#    def getGradient(self,X,Y):
+#        sm = np.exp(X - np.amax(X,axis=0))
+#        sm = sm/np.sum(sm,0)
+#
+#        for i,v in enumerate(Y):
+#            sm[v,i] = sm[v,i]-1
+#
+#        return sm
 
     def gradCheck(self,X,Y,Weights,lam):
         verify = self.getGradient(X,Y)
