@@ -5,7 +5,7 @@ import numpy.random as rand
 class Linear(object):
     def __init__(self,n_out, n_in):
         self.W = rand.normal(0.0,0.2,(n_out,n_in)) #use Xavier initialization
-        self.b = 0.01*np.ones((n_out,1))
+        self.b = np.zeros((n_out,1))
 
     def getOutput(self,X):
         return np.dot(self.W,X) + self.b
