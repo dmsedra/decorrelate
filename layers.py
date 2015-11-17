@@ -6,6 +6,7 @@ class Linear(object):
     def __init__(self,n_out, n_in):
         self.W = rand.normal(0.0,0.2,(n_out,n_in)) #use Xavier initialization
         self.b = np.zeros((n_out,1))
+        self.Wvel = np.zeros((n_out,n_in))
 
     def getOutput(self,X):
         return np.dot(self.W,X) + self.b
@@ -14,9 +15,13 @@ class Linear(object):
     def getGradient(self,X,lam,passback):
         m = X.shape[1]
         gradW = np.dot(passback, np.transpose(X))
+
         gradb = np.sum(passback,1)
         gradb = gradb[:,np.newaxis] #keep from broadcasting
         return (gradW/m + lam*self.W, gradb/m)
+
+    def updateMom(self,X,alpha,gamma,gradW):
+        self.Wvel = alpha*gradW+gamma*self.Wvel
 
     def getPassback(self,X,passback):
         return np.dot(self.W.T, passback)

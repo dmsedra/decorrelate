@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 from time import time
 
 DATA = "./data/mnist.pkl"
-alpha = 0.01
-lam = 0.0001
+alpha = 0.05
+lam = 0.001
+gamma = 0.9
 batch = 100
-iters = 20
+iters = 10
 
 def exp(data):
     (xtrain,ytrain), valid_set, (xtest,ytest) = data
@@ -30,6 +31,8 @@ def exp(data):
 
 
     epoch_acc = np.zeros((iters, xtrain.shape[1]/batch))
+    epoch_loss = np.zeros((iters, xtrain.shape[1]/batch))
+
     plot = []
     #train
     for i in range(iters):
@@ -46,6 +49,7 @@ def exp(data):
             s3 = nl3.getOutput(o3)
             #y = loss.getOutput(s2, ytrain,[l1.W,l2.W],lam)
             epoch_acc[i,k/batch] = loss.computeAccuracy(s3,ybatch)
+            epoch_loss[i,k/batch] = loss.getLoss(s3,ybatch,[l1.W,l2.W,l3.W],lam)
 
             #compute gradients
             d7 = loss.getGradient(s3, ybatch)
@@ -60,14 +64,18 @@ def exp(data):
             l3_gradW, l3_gradb = l3.getGradient(s2,lam,d6)
 
 
+            l1.updateMom(xbatch,alpha,gamma,l1_gradW)
+            l2.updateMom(s1,alpha,gamma,l2_gradW)
+            l3.updateMom(s2,alpha,gamma,l3_gradW)
+
+
             #update params
-            l1.W = l1.W - alpha*(l1_gradW)# + lam*l1.W)
+            l1.W = l1.W - l1.Wvel# + lam*l1.W)
             l1.b = l1.b - alpha*(l1_gradb)
-            l2.W = l2.W - alpha*(l2_gradW)# + lam*l2.W)
+            l2.W = l2.W - l2.Wvel
             l2.b = l2.b - alpha*l2_gradb
-            l3.W = l3.W - alpha*(l3_gradW)# + lam*l2.W)
+            l3.W = l3.W - l3.Wvel# + lam*l2.W)
             l3.b = l3.b - alpha*l3_gradb
-        print "train epoch: ", i, " accuracy: ", np.mean(epoch_acc[i,:])
 
         #test
         o1 = l1.getOutput(xtest)
@@ -80,7 +88,7 @@ def exp(data):
         a =  loss.computeAccuracy(s3,ytest)
         plot.append((i,a))
 
-        print "test epoch: ",i, " accuracy: ",a
+        print "epoch: ",i, " test accuracy: ",a," train accuracy: ",np.mean(epoch_acc[i,:])," train loss: ",np.mean(epoch_loss[i,:])
 
     x, y = zip(*plot)
     plt.plot(range(1,iters+1),y)
