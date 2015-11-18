@@ -9,7 +9,8 @@ class Linear(object):
         self.Wvel = np.zeros((n_out,n_in))
 
     def getOutput(self,X):
-        return np.dot(self.W,X) + self.b
+        out = np.dot(self.W,X) + self.b
+        return out
 
     # passback - (n_out,n)
     def getGradient(self,X,lam,passback):
@@ -18,10 +19,13 @@ class Linear(object):
 
         gradb = np.sum(passback,1)
         gradb = gradb[:,np.newaxis] #keep from broadcasting
-        return (gradW/m + lam*self.W, gradb/m)
+        gradW, gradb = (gradW/m + lam*self.W, gradb/m)
+        self.gradW = gradW
+        self.gradb = gradb
+        return (gradW,gradb)
 
-    def updateMom(self,X,alpha,gamma,gradW):
-        self.Wvel = alpha*gradW+gamma*self.Wvel
+    def updateMom(self,X,alpha,gamma):
+        self.Wvel = alpha*self.gradW+gamma*self.Wvel
 
     def getPassback(self,X,passback):
         return np.dot(self.W.T, passback)
@@ -77,6 +81,18 @@ class  Covariance(object):
         Rot = np.dot(np.dot(V, D), V.T)
 
         return np.dot(Rot.T, passback)
+
+class ReLU(object):
+    def __init__(self):
+        pass
+
+    def getOutput(self,X):
+        return np.maximum(0,X)
+
+    def getPassback(self,X,passback):
+        dx = np.zeros(X.shape)
+        dx[X >= 0] = 1
+        return np.multiply(dx,passback)
 
 
 class SoftNLL(object):

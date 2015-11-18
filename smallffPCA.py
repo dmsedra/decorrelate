@@ -9,24 +9,24 @@ alpha = 0.05
 lam = 0.001
 gamma = 0.9
 batch = 100
-iters = 10
+train = 1000
+test = 300
+iters = 35
 
 def exp(data):
     (xtrain,ytrain), valid_set, (xtest,ytest) = data
-    xtrain = xtrain.T
-    ytrain = ytrain.T
-    xtest = xtest.T
-    ytest = ytest.T
+    xtrain = xtrain[:train,:].T
+    ytrain = ytrain[:train]
+    xtest = xtest[:test,:].T
+    ytest = ytest[:test]
 
     d,n = xtrain.shape
 
     #define network structure
-    l1 = Linear(100,d)
-    nl1 = Sigmoid()
-    l2 = Linear(50,100)
-    nl2 = Sigmoid()
-    l3 = Linear(10,50)
-    nl3 = Sigmoid()
+    l1 = Linear(500,d)
+    nl1 = ReLU()
+    l2 = Linear(10,500)
+    nl2 = ReLU()
     loss = SoftNLL()
 
 
@@ -44,28 +44,22 @@ def exp(data):
             s1 = nl1.getOutput(o1)
             o2 = l2.getOutput(s1)
             s2 = nl2.getOutput(o2)
-            o3 = l3.getOutput(s2)
-            s3 = nl3.getOutput(o3)
             #y = loss.getOutput(s2, ytrain,[l1.W,l2.W],lam)
-            epoch_acc[i,k/batch] = loss.computeAccuracy(s3,ybatch)
-            epoch_loss[i,k/batch] = loss.getLoss(s3,ybatch,[l1.W,l2.W,l3.W],lam)
+            epoch_acc[i,k/batch] = loss.computeAccuracy(s2,ybatch)
+            epoch_loss[i,k/batch] = loss.getLoss(s2,ybatch,[l1.W,l2.W],lam)
 
             #compute gradients
-            d7 = loss.getGradient(s3, ybatch)
-            d6 = nl3.getPassback(o3,d7)
-            d5 = l3.getPassback(s2,d6)
+            d5 = loss.getGradient(s2, ybatch)
             d4 = nl2.getPassback(o2, d5)
             d3 =  l2.getPassback(s1, d4)
             d2 = nl1.getPassback(o1,d3)
 
             l1_gradW, l1_gradb = l1.getGradient(xbatch,lam,d2)
             l2_gradW, l2_gradb = l2.getGradient(s1,lam,d4)
-            l3_gradW, l3_gradb = l3.getGradient(s2,lam,d6)
 
 
-            l1.updateMom(xbatch,alpha,gamma,l1_gradW)
-            l2.updateMom(s1,alpha,gamma,l2_gradW)
-            l3.updateMom(s2,alpha,gamma,l3_gradW)
+            l1.updateMom(xbatch,alpha,gamma)
+            l2.updateMom(s1,alpha,gamma)
 
 
             #update params
@@ -73,18 +67,13 @@ def exp(data):
             l1.b = l1.b - alpha*(l1_gradb)
             l2.W = l2.W - l2.Wvel
             l2.b = l2.b - alpha*l2_gradb
-            l3.W = l3.W - l3.Wvel# + lam*l2.W)
-            l3.b = l3.b - alpha*l3_gradb
 
         #test
         o1 = l1.getOutput(xtest)
         s1 = nl1.getOutput(o1)
         o2 = l2.getOutput(s1)
         s2 = nl2.getOutput(o2)
-        o3 = l3.getOutput(s2)
-        s3 = nl3.getOutput(o3)
-
-        a =  loss.computeAccuracy(s3,ytest)
+        a =  loss.computeAccuracy(s2,ytest)
         plot.append((i,a))
 
         print "epoch: ",i, " test accuracy: ",a," train accuracy: ",np.mean(epoch_acc[i,:])," train loss: ",np.mean(epoch_loss[i,:])
