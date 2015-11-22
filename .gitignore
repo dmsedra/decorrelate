@@ -1,1 +1,5 @@
 data/mnist.pkl
+./mynnet/data/mldata/mnist-original.mat
+./data/mnist.pkl
+./nnet/examples/data/mldata/mnist-original.mat
+./nnet/data/mldata/mnist-original.mat

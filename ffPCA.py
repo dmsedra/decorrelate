@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from time import time
 
 DATA = "./data/mnist.pkl"
-alpha = 0.05
+alpha = 0.01
 lam = 0.001
 gamma = 0.9
 batch = 100

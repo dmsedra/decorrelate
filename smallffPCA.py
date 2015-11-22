@@ -1,32 +1,35 @@
-import numpy as np
 import cPickle
-from layers import *
 import matplotlib.pyplot as plt
 from time import time
+
+import numpy as np
+from scipy import stats
+
+from layers import *
 
 DATA = "./data/mnist.pkl"
 alpha = 0.05
 lam = 0.001
-gamma = 0.9
+gamma = 0.95
 batch = 100
-train = 1000
+train = 2000
 test = 300
 iters = 35
 
 def exp(data):
     (xtrain,ytrain), valid_set, (xtest,ytest) = data
-    xtrain = xtrain[:train,:].T
+    xtrain = zscore(xtrain[:train,:].T)
     ytrain = ytrain[:train]
-    xtest = xtest[:test,:].T
+    xtest = zscore(xtest[:test,:].T)
     ytest = ytest[:test]
 
     d,n = xtrain.shape
 
     #define network structure
-    l1 = Linear(500,d)
-    nl1 = ReLU()
-    l2 = Linear(10,500)
-    nl2 = ReLU()
+    l1 = Linear(800,d)
+    nl1 = Sigmoid()
+    l2 = Linear(10,800)
+    nl2 = Sigmoid()
     loss = SoftNLL()
 
 
@@ -89,6 +92,12 @@ def exp(data):
         f.write(str(i) + "," + str(v) + "\n")
 
     f.close()
+
+#row wise examples
+def zscore(data):
+    a,b = data.shape
+    return (data-np.mean(data,1).reshape((a,1)))/(np.std(data,1).reshape((a,1))+1e-8)
+
 def load_data():
     f = open(DATA)
     data = cPickle.load(f)
