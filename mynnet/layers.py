@@ -1,6 +1,6 @@
 import numpy as np
 from helpers import sigmoid, sigmoid_d, relu, relu_d, tanh, tanh_d
-
+import matplotlib.pyplot as plt
 
 class Layer(object):
     def _setup(self, input_shape, rng):
@@ -46,6 +46,44 @@ class ParamMixin(object):
         """ Get layer parameter steps as calculated from bprop(). """
         raise NotImplementedError()
 
+class BatchNorm(Layer, ParamMixin):
+    def __init__(self, n_out, weight_scale, weight_decay=0.0):
+        self.n_out = n_out
+        self.weight_scale = weight_scale
+        self.weight_decay = weight_decay
+
+    def _setup(self, input_shape, rng):
+        n_input = input_shape[1]
+        W_shape = (n_input, self.n_out)
+        self.W = rng.normal(size=W_shape, scale=self.weight_scale)
+        self.b = np.zeros(self.n_out)
+
+    def fprop(self, input):
+        #print 'max',np.amax(input)
+        self.last_input = input
+        return np.dot(input, self.W) + self.b
+
+    def bprop(self, output_grad):
+        n = output_grad.shape[0]
+        self.dW = np.dot(self.last_input.T, output_grad)/n - self.weight_decay*self.W
+        self.db = np.mean(output_grad, axis=0)
+        return np.dot(output_grad, self.W.T)
+
+    def params(self):
+        return self.W, self.b
+
+    def param_incs(self):
+        return self.dW, self.db
+
+    def param_grads(self):
+        # undo weight decay to get gradient
+        gW = self.dW+self.weight_decay*self.W
+        return gW, self.db
+
+    def output_shape(self, input_shape):
+        return (input_shape[0], self.n_out)
+
+
 class Whiten(Layer, ParamMixin):
     def __init__(self, n_out, weight_scale, weight_decay=0.0):
         self.n_out = n_out
@@ -59,15 +97,21 @@ class Whiten(Layer, ParamMixin):
         self.b = np.zeros(self.n_out)
 
     def fprop(self, input):
+        #print np.amax(input),np.amin(input),' before'
         self.last_input = input
+        print 'max',np.amax(input)
         #whiten input
         input = input - np.mean(input,0)[np.newaxis,:]
 
-        inCov = np.dot(input.T,input)/input.shape[1]
+        inCov = np.dot(input.T,input)/(input.shape[0]-1)
         [w,v] = np.linalg.eig(inCov)
-        trans = v.dot(np.diag((w+1e-8)**-.5))
-
-        input_w = input.dot(trans)
+        print np.amax(w.real),np.linalg.norm(inCov,'fro'),input.shape,inCov.shape
+        w = np.maximum(1e-10, w.real)
+        #plt.hist(w[w>1e-4])
+        #plt.show()
+        trans = v.dot(np.diag((w)**-.5)).real
+        input_w = input.dot(trans).real
+        #print np.amax(input_w),np.amin(input_w),' after'
 
         self.last_u = trans
         self.last_input_w = input_w
@@ -79,7 +123,7 @@ class Whiten(Layer, ParamMixin):
 
         self.dW = np.dot(self.last_input_w.T, output_grad)/n - self.weight_decay*self.W
         self.db = np.mean(output_grad, axis=0)
-        return np.dot(output_grad, self.W.T.dot(self.last_u.T))
+        return np.dot(output_grad, np.dot(self.last_u,self.W).T)
 
     def params(self):
         return self.W, self.b
@@ -110,6 +154,7 @@ class Linear(Layer, ParamMixin):
         self.b = np.zeros(self.n_out)
 
     def fprop(self, input):
+        #print 'max',np.amax(input)
         self.last_input = input
         return np.dot(input, self.W) + self.b
 
@@ -132,7 +177,6 @@ class Linear(Layer, ParamMixin):
 
     def output_shape(self, input_shape):
         return (input_shape[0], self.n_out)
-
 
 class Activation(Layer):
     def __init__(self, type):

@@ -62,6 +62,7 @@ class NeuralNetwork:
             print('iter %i, loss %.4f, train error %.4f' % (iter, loss, error))
 
     def _loss(self, X, Y_one_hot):
+        print "loss"
         X_next = X
         for layer in self.layers:
             X_next = layer.fprop(X_next)
@@ -78,6 +79,7 @@ class NeuralNetwork:
 
     def error(self, X, Y):
         """ Calculate error on the given data. """
+        print "error"
         Y_pred = self.predict(X)
         error = Y_pred != Y
         return np.mean(error)
@@ -116,3 +118,35 @@ class NeuralNetwork:
                     param_init = np.ravel(np.copy(param))
                     err = sp.optimize.check_grad(fun, grad_fun, param_init)
                     print('diff %.2e' % err)
+
+    def grad_check(self, X, Y):
+        Y_one_hot = one_hot(Y)
+        self._setup(X,Y_one_hot)
+        for l, layer in enumerate(self.layers):
+            if isinstance(layer, ParamMixin):
+                for p,param in enumerate(layer.params()):
+                    #compute correctly
+                    X_next = X
+                    for layer in self.layers:
+                        X_next = layer.fprop(X_next)
+                    Y_pred = X_next
+
+                    # Back-propagation of partial derivatives
+                    next_grad = self.layers[-1].input_grad(Y_one_hot,
+                                                            Y_pred)
+                    for layer in reversed(self.layers[l:-1]):
+                        next_grad = layer.bprop(next_grad)
+
+                    #compute my way
+                    a,b = param.shape
+                    check = np.zeros((a,b))
+                    eps = 1e-5
+                    for i in range(a):
+                        for j in range(b):
+                            param[i,j] = param[i,j] + eps
+                            f = self._loss(X,Y_one_hot)
+                            param[i,j] = param[i,j] - 2*eps
+                            s = self._loss(X,Y_one_hot)
+                            check[i,j] = (f-s)/(2*eps)
+
+                    print np.linalg.norm(layer.param_incs[p]-check)

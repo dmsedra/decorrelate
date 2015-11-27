@@ -13,31 +13,31 @@ def run():
     # Fetch data
     mnist = sklearn.datasets.fetch_mldata('MNIST original', data_home='./data')
     split = 10000
-    X_train = mnist.data[:split]/255.0
-    y_train = mnist.target[:split]
-    X_test = mnist.data[split:]/255.0
-    y_test = mnist.target[split:]
+
+    perm = np.random.permutation(mnist.data.shape[0])
+    trainIdxs = perm[:split]
+    testIdxs = perm[split:]
+    X_train = mnist.data[trainIdxs]/255.0
+    y_train = mnist.target[trainIdxs]
+    X_test = mnist.data[testIdxs]/255.0
+    y_test = mnist.target[testIdxs]
     n_classes = np.unique(y_train).size
 
-    # Downsample training data
-    n_train_samples = 10000
-    train_idxs = np.random.random_integers(0, split-1, n_train_samples)
-    X_train = X_train[train_idxs, ...]
-    y_train = y_train[train_idxs, ...]
+    print X_train.shape, np.amax(X_train)
 
     # Setup multi-layer perceptron
     nn = net.NeuralNetwork(
         layers=[
             Linear(
-                n_out=100,
+                n_out=500,
                 weight_scale=0.2,
-                weight_decay=0.004,
+                weight_decay=0.008,
             ),
             Activation('relu'),
             Whiten(
-                n_out=100,
+                n_out=200,
                 weight_scale=0.2,
-                weight_decay=0.004,
+                weight_decay=0.008,
             ),
             Activation('relu'),
             Linear(
@@ -46,13 +46,13 @@ def run():
                 weight_decay=0.004,
             ),
             LogRegression(),
-        ],
-    )
+        ]
+   )
 
-    nn.check_gradients(X_train[:50],y_train[:50])
+    #nn.check_gradients(X_train[:50],y_train[:50])
     # Train neural network
     t0 = time.time()
-    nn.fit(X_train, y_train, learning_rate=0.1, max_iter=20, batch_size=64)
+    nn.fit(X_train, y_train, learning_rate=0.25, max_iter=10, batch_size=1000)
     t1 = time.time()
     print('Duration: %.1fs' % (t1-t0))
 

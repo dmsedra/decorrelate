@@ -1,0 +1,25 @@
+/home/dan/res/PCA/mynnet/neuralnetwork.py:57: ComplexWarning: Casting complex values to real discards the imaginary part
+  param -= learning_rate*inc
+  iter 1, loss -0.0000, train error 0.0000
+  iter 2, loss -0.0000, train error 0.0000
+  iter 3, loss -0.0000, train error 0.0000
+  iter 4, loss -0.0000, train error 0.0000
+  iter 5, loss -0.0000, train error 0.0000
+  iter 6, loss -0.0000, train error 0.0000
+  iter 7, loss -0.0000, train error 0.0000
+  iter 8, loss -0.0000, train error 0.0000
+  iter 9, loss -0.0000, train error 0.0000
+  iter 10, loss -0.0000, train error 0.0000
+  iter 11, loss -0.0000, train error 0.0000
+  iter 12, loss -0.0000, train error 0.0000
+  iter 13, loss -0.0000, train error 0.0000
+  iter 14, loss -0.0000, train error 0.0000
+  iter 15, loss -0.0000, train error 0.0000
+  iter 16, loss -0.0000, train error 0.0000
+  iter 17, loss -0.0000, train error 0.0000
+  iter 18, loss -0.0000, train error 0.0000
+  iter 19, loss -0.0000, train error 0.0000
+  iter 20, loss -0.0000, train error 0.0000
+  Duration: 2532.4s
+  Test error rate: 0.9144
+
